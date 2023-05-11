@@ -4,6 +4,7 @@ pub struct Connection {
   pub username: String,
   pub password: String,
   pub mac: String,
+  pub try_count: u8,
 }
 
 impl Connection {
@@ -13,7 +14,8 @@ impl Connection {
     let mut mac = String::from("");
     for interface in interfaces {
       if interface.is_up() && interface.is_broadcast() && !interface.is_loopback() {
-        mac = interface.mac.unwrap().to_string();
+        let raw_mac = interface.mac.unwrap().to_string();
+        mac = raw_mac.split(":").collect::<Vec<&str>>().join("");
         break;
       }
     }
@@ -21,8 +23,19 @@ impl Connection {
     Self {
       username,
       password,
-      mac
+      mac,
+      try_count: 0,
     }
+  }
+
+  fn get_challenge_data(&self) -> Vec<u8> {
+    vec![
+      0x01,
+      0x02 + self.try_count,
+      rand::random::<u8>(),
+      rand::random::<u8>(),
+      0x09,
+    ]
   }
 
   pub fn loop_until(&self) {
