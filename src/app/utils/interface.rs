@@ -6,13 +6,13 @@ pub trait Ichallenge {
 }
 
 pub trait Ilogin {
-  fn login(&self, buf: &[u8]) -> Vec<u8>;
+  fn login(& mut self) -> DrResult<()>;
   fn get_login_data(&self) -> Vec<u8>;
-  fn logout(&self, buf: &[u8]) -> Vec<u8>;
+  fn logout(& mut self) -> DrResult<()>;
   fn get_logout_data(&self) -> Vec<u8>;
 }
 
 pub trait Ikeepalive {
-  fn keepalive(&self, buf: &[u8]) -> Vec<u8>;
+  fn keepalive(& mut self) -> DrResult<()>;
   fn get_keepalive_data(&self) -> Vec<u8>;
 }

@@ -2,7 +2,7 @@ use std::net::UdpSocket;
 
 use crate::app::utils::{
   error::{DrResult, DrcomError},
-  interface::Ichallenge,
+  interface::{Ichallenge, Ilogin},
 };
 
 /**
@@ -15,7 +15,7 @@ pub struct DrcomConnection {
   pub destination: String,
   socket: UdpSocket,
   try_times: u8,
-  buf: [u8; 1024],
+  clg_buf: [u8; 1024],
 }
 
 impl DrcomConnection {
@@ -27,13 +27,19 @@ impl DrcomConnection {
       destination: String::from("10.100.61.3:61440"),
       socket: UdpSocket::bind("0.0.0.0:0").unwrap(),
       try_times: 0,
-      buf: [0; 1024],
+      clg_buf: [0; 1024],
     }
+  }
+
+  pub fn clear(&mut self) {
+    self.try_times = 0;
+    self.clg_buf = [0; 1024];
   }
 }
 
 impl Ichallenge for DrcomConnection {
   fn challenge(&mut self) -> DrResult<()> {
+    self.clear();
     while self.try_times < 5 {
       let clg_data = self.get_challenge_data();
       let success = self
@@ -51,14 +57,14 @@ impl Ichallenge for DrcomConnection {
         ));
       }
 
-      self.socket.recv_from(&mut self.buf).unwrap();
+      self.socket.recv_from(&mut self.clg_buf).unwrap();
 
-      if self.buf[0] == 0x02 {
+      if self.clg_buf[0] == 0x02 {
         println!("Challenge success!");
         return Ok(());
       }
 
-      if self.buf[0] == 0x07 {
+      if self.clg_buf[0] == 0x07 {
         eprintln!("Challenge data error!");
         return Err(DrcomError::DataChallengeError(
           "Challenge data error!".into(),
@@ -73,29 +79,58 @@ impl Ichallenge for DrcomConnection {
     Err(DrcomError::DataChallengeError("Challenge failed!".into()))
   }
 
+  /**
+   * Generate challenge data.
+   *
+   * Data format:
+   *      0x01              Challenge data header
+   *      0x02 + try_times  Challenge data try times
+   *      rand()            Random number
+   *      rand()            Random number
+   *      0x09              Challenge data tail
+   *      0x00              Fill 0 to maintain the length of 20 bytes
+   */
   fn get_challenge_data(&self) -> Vec<u8> {
-    vec![
+    let mut data = vec![
       0x01,
       0x02 + self.try_times,
       rand::random::<u8>(),
       rand::random::<u8>(),
       0x09,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-    ]
+    ];
+    data.resize(20, 0);
+    data
+  }
+}
+
+impl Ilogin for DrcomConnection {
+  fn login(&mut self) -> DrResult<()> {
+    todo!()
+  }
+
+  fn logout(&mut self) -> DrResult<()> {
+    todo!()
+  }
+
+  fn get_login_data(&self) -> Vec<u8> {
+    let mut code_array = vec![0x03, 0x01];
+
+    // salt
+    code_array.extend_from_slice(&self.clg_buf[4..8]);
+
+    // password
+    code_array.extend_from_slice(&self.password.as_bytes());
+
+    // md5 hash
+    let md5_hash = format!("{:x}", md5::compute(code_array));
+
+    let mut data = vec![0x03, 0x01, 0x00, self.username.len() as u8 + 20];
+    data.resize(338, 0);
+    data
+  }
+
+  fn get_logout_data(&self) -> Vec<u8> {
+    todo!()
   }
 }
 
