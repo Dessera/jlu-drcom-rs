@@ -27,7 +27,8 @@ impl App {
       } => {
         let mac_addr = mac
           .split(':')
-          .fold(0, |acc, x| acc * 256 + u64::from_str_radix(x, 16).unwrap());
+          .map(|item| u8::from_str_radix(item, 16).unwrap())
+          .collect();
         let mut connection =
           modules::connection::DrcomConnection::new(username, password, mac_addr);
         connection.challenge().unwrap();
