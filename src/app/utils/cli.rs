@@ -13,9 +13,12 @@ pub enum Commands {
   #[command(about = "run the application")]
   Run{
     #[arg(short, long, help = "jlu.edu.cn username")]
-    username: Option<String>,
+    username: String,
 
     #[arg(short, long, help = "jlu.edu.cn password")]
-    password: Option<String>,
+    password: String,
+
+    #[arg(short, long, help = "your machine's MAC address")]
+    mac: String,
   }
 }
