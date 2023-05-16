@@ -1,6 +1,7 @@
 use std::net::UdpSocket;
 
 use crate::app::utils::{
+  self,
   error::{DrResult, DrcomError},
   interface::{Ichallenge, Ilogin},
 };
@@ -105,6 +106,8 @@ impl Ichallenge for DrcomConnection {
 
 impl Ilogin for DrcomConnection {
   fn login(&mut self) -> DrResult<()> {
+    let data = self.get_login_data();
+
     todo!()
   }
 
@@ -159,7 +162,6 @@ impl Ilogin for DrcomConnection {
    */
   fn get_login_data(&self) -> Vec<u8> {
     let mut data = vec![0x03, 0x01, 0x00, self.username.len() as u8 + 20];
-
     let salt = &self.clg_buf[4..8];
     let md5_hash = md5::compute(
       [
@@ -170,16 +172,91 @@ impl Ilogin for DrcomConnection {
       .concat(),
     );
     data.extend_from_slice(&md5_hash.as_slice());
-
     let mut usr_data = self.username.as_bytes().to_vec();
     usr_data.resize(36, 0);
     data.extend_from_slice(&usr_data);
-
     data.extend_from_slice(&[0x20, 0x03]);
-
     // md5 ^ mac
+    let mac_res = md5_hash
+      .iter()
+      .zip(self.mac_addr.iter())
+      .map(|(a, b)| a ^ b)
+      .collect::<Vec<u8>>();
+    data.extend_from_slice(&mac_res);
+    let md5_hash_2 = md5::compute(
+      [
+        vec![0x01],
+        self.password.as_bytes().to_vec(),
+        salt.to_vec(),
+        vec![0x00, 0x00, 0x00, 0x00],
+      ]
+      .concat(),
+    );
+    data.extend_from_slice(&md5_hash_2.as_slice());
+    // TODO: Fill true ip address
+    data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00]);
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+    let md5_hash_3 = md5::compute([data.clone(), vec![0x14, 0x00, 0x07, 0x0b]].concat());
+    data.extend_from_slice(&md5_hash_3[0..8]);
+    // TODO: ipdog
+    data.push(0x01);
 
-    data.resize(338, 0);
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+
+    // TODO: Fill true host name
+    data.extend_from_slice(&[0x00; 32]);
+    // TODO: Fill true DNS server
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+    // TODO: Fill true DHCP server
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+    // TODO: Sencondary DNS
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+
+    // delimeter
+    data.extend_from_slice(&[0x00; 8]);
+    // unknown
+    data.extend_from_slice(&[0x94, 0x00, 0x00, 0x00]);
+    // os major
+    data.extend_from_slice(&[0x06, 0x00, 0x00, 0x00]);
+    // os minor
+    data.extend_from_slice(&[0x02, 0x00, 0x00, 0x00]);
+    // os build
+    data.extend_from_slice(&[0xf0, 0x23, 0x00, 0x00]);
+    // os unknown
+    data.extend_from_slice(&[0x02, 0x00, 0x00, 0x00]);
+
+    data.extend_from_slice(&[0x44, 0x72, 0x43, 0x4f, 0x4d, 0x00, 0xcf, 0x07, 0x68]);
+    data.extend_from_slice(&[0x00, 55]);
+    data.extend_from_slice(&[
+      0x33, 0x64, 0x63, 0x37, 0x39, 0x66, 0x35, 0x32, 0x31, 0x32, 0x65, 0x38, 0x31, 0x37, 0x30,
+      0x61, 0x63, 0x66, 0x61, 0x39, 0x65, 0x63, 0x39, 0x35, 0x66, 0x31, 0x64, 0x37, 0x34, 0x39,
+      0x31, 0x36, 0x35, 0x34, 0x32, 0x62, 0x65, 0x37, 0x62, 0x31,
+    ]);
+    data.extend_from_slice(&[0x00, 24]);
+    // TODO: Auth version
+    data.extend_from_slice(&[0x68, 0x00]);
+    data.extend_from_slice(&[0x00, self.password.len() as u8]);
+    let ror_data = utils::ror(md5_hash.as_slice(), self.password.as_bytes());
+    data.extend_from_slice(&ror_data);
+
+    data.extend_from_slice(&[0x02, 0x0c]);
+    data.append(&mut data.clone());
+    data.extend_from_slice(&[0x01, 0x26, 0x07, 0x11, 0x00, 0x00]);
+    data.extend_from_slice(&self.mac_addr);
+    data.extend_from_slice(&[0x00, 0x00]);
+    data.extend_from_slice(&self.mac_addr);
+
+    if self.password.len() / 4 != 4 {
+      [0..self.password.len() / 4]
+        .iter()
+        .for_each(|_| data.push(0x00));
+    }
+
+    data.extend_from_slice(&[0x60, 0xa2]);
+    data.extend_from_slice(&[0x00; 28]);
+
     data
   }
 

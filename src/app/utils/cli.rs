@@ -11,7 +11,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
   #[command(about = "run the application")]
-  Run{
+  Run {
     #[arg(short, long, help = "jlu.edu.cn username")]
     username: String,
 
@@ -20,5 +20,18 @@ pub enum Commands {
 
     #[arg(short, long, help = "your machine's MAC address")]
     mac: String,
-  }
+  },
+
+  Export {
+    #[arg(help = "path to save config file")]
+    path: String,
+  },
+
+  Import {
+    #[arg(help = "path to config file")]
+    path: String,
+  },
+
+  
+
 }

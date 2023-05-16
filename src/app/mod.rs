@@ -33,6 +33,12 @@ impl App {
           modules::connection::DrcomConnection::new(username, password, mac_addr);
         connection.challenge().unwrap();
       }
+      cli::Commands::Export { path } => {
+        todo!("Create default config file at {}", path)
+      }
+      cli::Commands::Import { path } => {
+        todo!("Import config file from {}", path)
+      }
     }
   }
 }
