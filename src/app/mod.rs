@@ -3,9 +3,14 @@ pub mod utils;
 
 use clap::Parser;
 
-use crate::app::{
-  modules::{connection::DrcomConnection, generator::ChallengeGenerator},
-  utils::{cli, interface::Ichallenge},
+use crate::app::utils::cli;
+
+use self::{
+  modules::{
+    connection::{self, DrcomConnection},
+    generator::ChallengeGenerator,
+  },
+  utils::{config::ConfigStore, error::DrResult},
 };
 
 pub struct App {
@@ -19,11 +24,12 @@ impl App {
     }
   }
 
-  pub fn run(&self) {
+  pub fn run(&self) -> DrResult<()> {
     match &self.cli_args.command {
       cli::Commands::Run { username, password } => {
-        println!("username: {}", username);
-        println!("password: {}", password);
+        ConfigStore::get_instance()?.lock().unwrap().username = username.clone();
+        ConfigStore::get_instance()?.lock().unwrap().password = password.clone();
+        DrcomConnection::<ChallengeGenerator>::new()?.run()
       }
     }
   }

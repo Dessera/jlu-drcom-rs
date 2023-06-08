@@ -2,16 +2,22 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DrcomError {
-  #[error("io error: {0}")]
+  #[error("Io error: {0}")]
   IoError(#[from] std::io::Error),
 
-  #[error("challenge error: {0}")]
+  #[error("Lock error: {0}")]
+  LockError(String),
+
+  #[error("Os error: {0}")]
+  OsError(String),
+
+  #[error("Challenge error: {0}")]
   ChallengeError(String),
 
-  #[error("login error: {0}")]
+  #[error("Login error: {0}")]
   LoginError(String),
 
-  #[error("logout error: {0}")]
+  #[error("Logout error: {0}")]
   LogoutError(String),
 }
 

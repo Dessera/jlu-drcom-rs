@@ -8,6 +8,7 @@ pub struct Cli {
   pub command: Commands,
 }
 
+/// Subcommands
 #[derive(Subcommand)]
 pub enum Commands {
   Run {

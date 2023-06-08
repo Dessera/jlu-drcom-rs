@@ -1,19 +1,27 @@
 use rand::random;
 
-use crate::app::utils::checksum;
-use crate::app::utils::config::ConfigStore;
-use crate::app::utils::error::DrResult;
-use crate::app::utils::error::DrcomError;
-use crate::app::utils::interface::Ilogin;
-use crate::app::utils::ror;
+use crate::app::utils::{
+  checksum,
+  config::ConfigStore,
+  error::{DrResult, DrcomError},
+  interface::Ilogin,
+  ror,
+};
 
 pub struct LoginGenerator {}
 
 impl Ilogin for LoginGenerator {
-  fn get_login_data(&self) -> Vec<u8> {
+  fn get_login_data(&self) -> DrResult<Vec<u8>> {
     // config instance get
-    let binding = ConfigStore::get_instance();
-    let config = binding.lock().unwrap();
+    let binding = ConfigStore::get_instance()?;
+    let config = match binding.lock() {
+      Ok(config) => config,
+      Err(_) => {
+        return Err(DrcomError::LockError(
+          "Failed to lock config instance".to_string(),
+        ))
+      }
+    };
     let mut data = vec![0u8; 349];
     let password_len = if config.password.len() > 16 {
       16
@@ -149,11 +157,11 @@ impl Ilogin for LoginGenerator {
 
     let new_len = 334 + (password_len - 1) / 4 * 4;
     data.resize(new_len, 0x00);
-    data
+    Ok(data)
   }
 
-  fn get_logout_data(&self) -> Vec<u8> {
-    let binding = ConfigStore::get_instance();
+  fn get_logout_data(&self) -> DrResult<Vec<u8>> {
+    let binding = ConfigStore::get_instance().unwrap();
     let config = binding.lock().unwrap();
     let mut data = vec![0u8; 80];
     data[0] = 0x06; //code
@@ -188,11 +196,11 @@ impl Ilogin for LoginGenerator {
 
     // tail
     data[64..80].copy_from_slice(&config.tail);
-    data
+    Ok(data)
   }
 
   fn login(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
-    let data = self.get_login_data();
+    let data = self.get_login_data()?;
     socket.send(&data)?;
     let mut buf = [0; 1024];
     socket.recv(&mut buf)?;
@@ -211,7 +219,7 @@ impl Ilogin for LoginGenerator {
   }
 
   fn logout(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
-    let data = self.get_logout_data();
+    let data = self.get_logout_data()?;
     socket.send(&data)?;
     let mut buf = [0; 512];
     socket.recv(&mut buf)?;
@@ -244,11 +252,19 @@ mod tests {
   #[ignore = "need a valid config"]
   fn test_login() {
     simple_logger::init().unwrap();
-    ConfigStore::init();
+    ConfigStore::init().unwrap();
 
     // test settings
-    ConfigStore::get_instance().lock().unwrap().username = "username".to_string();
-    ConfigStore::get_instance().lock().unwrap().password = "password".to_string();
+    ConfigStore::get_instance()
+      .unwrap()
+      .lock()
+      .unwrap()
+      .username = "username".to_string();
+    ConfigStore::get_instance()
+      .unwrap()
+      .lock()
+      .unwrap()
+      .password = "password".to_string();
 
     let mut cgen = ChallengeGenerator::new();
     let mut lgen = LoginGenerator::new();
