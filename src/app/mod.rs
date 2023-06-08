@@ -3,9 +3,10 @@ pub mod utils;
 
 use clap::Parser;
 
-use crate::app::utils::cli;
-
-use self::utils::interface::Ichallenge;
+use crate::app::{
+  modules::{connection::DrcomConnection, generator::ChallengeGenerator},
+  utils::{cli, interface::Ichallenge},
+};
 
 pub struct App {
   pub cli_args: cli::Cli,
@@ -20,24 +21,9 @@ impl App {
 
   pub fn run(&self) {
     match &self.cli_args.command {
-      cli::Commands::Run {
-        username,
-        password,
-        mac,
-      } => {
-        let mac_addr = mac
-          .split(':')
-          .map(|item| u8::from_str_radix(item, 16).unwrap())
-          .collect();
-        let mut connection =
-          modules::connection::DrcomConnection::new(username, password, mac_addr);
-        connection.challenge().unwrap();
-      }
-      cli::Commands::Export { path } => {
-        todo!("Create default config file at {}", path)
-      }
-      cli::Commands::Import { path } => {
-        todo!("Import config file from {}", path)
+      cli::Commands::Run { username, password } => {
+        println!("username: {}", username);
+        println!("password: {}", password);
       }
     }
   }

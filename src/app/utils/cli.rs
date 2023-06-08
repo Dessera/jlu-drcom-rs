@@ -10,28 +10,10 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-  #[command(about = "run the application")]
   Run {
-    #[arg(short, long, help = "jlu.edu.cn username")]
+    #[arg(help = "username of jlu mail", short, long)]
     username: String,
-
-    #[arg(short, long, help = "jlu.edu.cn password")]
+    #[arg(help = "password of jlu mail", short, long)]
     password: String,
-
-    #[arg(short, long, help = "your machine's MAC address")]
-    mac: String,
-  },
-
-  Export {
-    #[arg(help = "path to save config file")]
-    path: String,
-  },
-
-  Import {
-    #[arg(help = "path to config file")]
-    path: String,
-  },
-
-  
-
+  }
 }
