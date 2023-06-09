@@ -1,6 +1,6 @@
 use rand::random;
 
-use crate::app::utils::{
+use crate::utils::{
   checksum,
   config::ConfigStore,
   error::{DrResult, DrcomError},
@@ -231,7 +231,7 @@ impl Ilogin for LoginGenerator {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::app::{modules::generator::ChallengeGenerator, utils::interface::Ichallenge};
+  use crate::{modules::generator::ChallengeGenerator, utils::interface::Ichallenge};
 
   #[test]
   #[ignore = "need a valid config"]

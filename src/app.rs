@@ -1,11 +1,8 @@
-pub mod modules;
-pub mod utils;
-
 use clap::Parser;
 
-use crate::app::utils::cli;
+use crate::utils::cli;
 
-use self::{
+use crate::{
   modules::{
     connection::DrcomConnection,
     generator::{ChallengeGenerator, KeepAliveGenerator, LoginGenerator},

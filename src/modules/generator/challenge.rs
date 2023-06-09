@@ -1,9 +1,9 @@
 use rand::random;
-
-use crate::app::utils::config::ConfigStore;
-use crate::app::utils::error::DrResult;
-use crate::app::utils::error::DrcomError;
-use crate::app::utils::interface::Ichallenge;
+use crate::utils::{
+  config::ConfigStore,
+  error::{DrResult, DrcomError},
+  interface::Ichallenge,
+};
 use log::error;
 
 /// Implementation of Ichallenge,

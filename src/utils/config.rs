@@ -1,11 +1,22 @@
 use super::error::DrResult;
-use crate::app::utils::error::DrcomError;
+use crate::utils::error::DrcomError;
 use lazy_static::lazy_static;
 use log::error;
 use std::sync::{Mutex, MutexGuard};
 
+/// ConfigResult is a type alias of DrResult<MutexGuard<'a, ConfigStore>>.
 pub type ConfigResult<'a> = DrResult<MutexGuard<'a, ConfigStore>>;
 
+/// ConfigStore is a singleton struct that stores all the config
+/// of the program.
+/// Basically, it contains 4 parts:
+/// 1. runtime config, which is generated during runtime
+/// 2. command line args, which is parsed from command line
+/// 3. pc or file config, which is read from pc or file
+/// 4. static config, which is hard coded in the program
+/// 
+/// Note that the config is not thread safe, and it is not necessary to
+/// make it thread safe.
 pub struct ConfigStore {
   // runtime config
   pub salt: [u8; 4],
@@ -32,8 +43,11 @@ pub struct ConfigStore {
 }
 
 impl ConfigStore {
+  /// Init the config store.
+  /// It will read the hostname from the system.
+  /// TODO: read the mac address from the system.
+  /// TODO: save / read the config from the file.
   pub fn init() -> DrResult<()> {
-    // init store immediately
     let mut config = ConfigStore::get_instance()?;
     config.hostname = match hostname::get()?.into_string() {
       Ok(s) => s,
@@ -45,7 +59,7 @@ impl ConfigStore {
     Ok(())
   }
 
-  // implement in test case
+  /// Create a new ConfigStore.
   pub fn new() -> Self {
     Self {
       salt: [0u8; 4],
@@ -76,6 +90,8 @@ lazy_static! {
 }
 
 impl ConfigStore {
+  /// Get the instance of ConfigStore.
+  /// It will return a ConfigResult.
   pub fn get_instance() -> ConfigResult<'static> {
     match INSTANCE.lock() {
       Ok(config) => Ok(config),

@@ -1,7 +1,4 @@
-use crate::app::utils::config::ConfigStore;
-use crate::app::utils::crc;
-use crate::app::utils::error::DrResult;
-use crate::app::utils::interface::Ikeepalive;
+use crate::utils::{config::ConfigStore, crc, error::DrResult, interface::Ikeepalive};
 
 #[derive(Default)]
 pub struct KeepAliveGenerator {
