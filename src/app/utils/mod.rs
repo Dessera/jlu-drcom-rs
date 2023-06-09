@@ -12,7 +12,7 @@ pub fn ror(data: &[u8], pwd: &[u8]) -> Vec<u8> {
   ret
 }
 
-pub fn checksum(data: Vec<u8>) -> [u8; 4] {
+pub fn checksum(data: &[u8]) -> [u8; 4] {
   let mut sum = [0u8; 4];
   let len = data.len();
   let mut i = 0;
@@ -35,6 +35,33 @@ pub fn checksum(data: Vec<u8>) -> [u8; 4] {
   }
   let mut big_integer = num_bigint::BigUint::from_bytes_le(&sum);
   big_integer *= 1968u32;
+  // let big_integer = big_integer & 0xff_ff_ff_ffu32;
+  // let bytes = big_integer.to_bytes_le();
+  let bytes = big_integer
+    .to_bytes_le()
+    .iter()
+    .map(|x| (x & 0xff) as u8)
+    .collect::<Vec<_>>();
+  let mut i = 0;
+  let mut ret = [0u8; 4];
+  for j in (0..4).rev() {
+    ret[j] = bytes[i];
+    i += 1;
+  }
+  ret
+}
+
+pub fn crc(data: &[u8]) -> [u8; 4] {
+  let mut sum = [0u8; 2];
+  let len = data.len();
+  let mut i = 0;
+  while i + 1 < len {
+    sum[0] ^= data[i + 1];
+    sum[1] ^= data[i];
+    i += 2;
+  }
+  let mut big_integer = num_bigint::BigUint::from_bytes_le(&sum);
+  big_integer *= 711u32;
   // let big_integer = big_integer & 0xff_ff_ff_ffu32;
   // let bytes = big_integer.to_bytes_le();
   let bytes = big_integer

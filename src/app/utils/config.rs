@@ -1,15 +1,19 @@
 use super::error::DrResult;
 use crate::app::utils::error::DrcomError;
+use lazy_static::lazy_static;
 use log::error;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
-pub type ConfigResult = DrResult<Arc<Mutex<ConfigStore>>>;
+pub type ConfigResult<'a> = DrResult<MutexGuard<'a, ConfigStore>>;
 
 pub struct ConfigStore {
   // runtime config
   pub salt: [u8; 4],
+  pub md5a: [u8; 16],
   pub tail: [u8; 16],
+  pub tail_2: [u8; 4],
   pub client_ip: [u8; 4],
+  pub keep_alive_version: (u8, u8),
 
   // command line args
   pub username: String,
@@ -49,12 +53,15 @@ impl ConfigStore {
     };
     Ok(Self {
       salt: [0u8; 4],
+      md5a: [0u8; 16],
       tail: [0u8; 16],
+      tail_2: [0u8; 4],
       client_ip: [0u8; 4],
+      keep_alive_version: (0, 0),
       username: String::new(),
       password: String::new(),
       hostname: hostnm,
-      mac: [0u8; 6],
+      mac: [0xFC, 0x34, 0x97, 0x95, 0x27, 0xAF],
       primary_dns: [10, 10, 10, 10],
 
       // TODO: now the place use my dns server (consider remove this)
@@ -64,17 +71,33 @@ impl ConfigStore {
   }
 
   // Singleton pattern for ConfigStore
-  pub fn get_instance() -> ConfigResult {
-    static mut INSTANCE: Option<Arc<Mutex<ConfigStore>>> = None;
-    unsafe {
-      Ok(match INSTANCE {
-        Some(ref ins) => ins.clone(),
-        None => {
-          let ins = Arc::new(Mutex::new(ConfigStore::new()?));
-          INSTANCE = Some(ins.clone());
-          ins
-        }
-      })
+  // pub fn get_instance() -> ConfigResult {
+  //   static mut INSTANCE: Option<ConfigStore> = None;
+  //   unsafe {
+  //     if INSTANCE.is_none() {
+  //       INSTANCE = Some(ConfigStore::new()?);
+  //     }
+  //     Ok(INSTANCE.clone())
+  //   }
+  // }
+}
+
+// Singleton pattern for ConfigStore
+// Mutiple thread is not supported
+lazy_static! {
+  static ref INSTANCE: Mutex<ConfigStore> = {
+    let config = ConfigStore::new().unwrap();
+    Mutex::new(config)
+  };
+}
+
+impl ConfigStore {
+  pub fn get_instance() -> ConfigResult<'static> {
+    match INSTANCE.lock() {
+      Ok(config) => Ok(config),
+      Err(_) => Err(DrcomError::LockError(
+        "Failed to lock config instance".to_string(),
+      )),
     }
   }
 }

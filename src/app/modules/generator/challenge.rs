@@ -15,6 +15,7 @@ pub struct ChallengeGenerator {
 
 impl Ichallenge for ChallengeGenerator {
   fn challenge(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
+    let mut config = ConfigStore::get_instance()?;
     while self.try_times < 5 {
       // get & send challenge data
       let data = self.get_challenge_data()?;
@@ -25,9 +26,8 @@ impl Ichallenge for ChallengeGenerator {
       let _ = socket.recv(&mut buf);
 
       if buf[0] == 0x02 {
-        ConfigStore::get_instance()?.lock().unwrap().salt = [buf[4], buf[5], buf[6], buf[7]];
-        ConfigStore::get_instance()?.lock().unwrap().client_ip =
-          [buf[20], buf[21], buf[22], buf[23]];
+        config.salt = [buf[4], buf[5], buf[6], buf[7]];
+        config.client_ip = [buf[20], buf[21], buf[22], buf[23]];
         return Ok(());
       }
 

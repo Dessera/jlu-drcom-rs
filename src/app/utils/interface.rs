@@ -13,6 +13,6 @@ pub trait Ilogin {
 }
 
 pub trait Ikeepalive {
-  fn keepalive(&mut self) -> DrResult<()>;
+  fn keepalive(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()>;
   fn get_keepalive_data(&self) -> DrResult<Vec<u8>>;
 }

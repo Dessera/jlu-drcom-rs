@@ -2,7 +2,7 @@ use rand::random;
 
 use crate::app::utils::{
   checksum,
-  config::ConfigStore,
+  config::{self, ConfigStore},
   error::{DrResult, DrcomError},
   interface::Ilogin,
   ror,
@@ -13,15 +13,7 @@ pub struct LoginGenerator {}
 impl Ilogin for LoginGenerator {
   fn get_login_data(&self) -> DrResult<Vec<u8>> {
     // config instance get
-    let binding = ConfigStore::get_instance()?;
-    let config = match binding.lock() {
-      Ok(config) => config,
-      Err(_) => {
-        return Err(DrcomError::LockError(
-          "Failed to lock config instance".to_string(),
-        ))
-      }
-    };
+    let mut config = ConfigStore::get_instance()?;
     let mut data = vec![0u8; 349];
     let password_len = if config.password.len() > 16 {
       16
@@ -44,6 +36,7 @@ impl Ilogin for LoginGenerator {
         .collect::<Vec<u8>>(),
     );
     data[4..20].copy_from_slice(&md5a.0);
+    config.md5a = md5a.0;
 
     // username 36 bytes (fill with 0x00 if less than 36)
     let mut usrname_data = config.username.as_bytes().to_vec();
@@ -134,7 +127,7 @@ impl Ilogin for LoginGenerator {
     data[password_len + 315] = 0x0c;
     // checksum: 0x01 0x26 0x07 0x11 0x00 0x00 mac
     let checksum_val = checksum(
-      [0x01, 0x26, 0x07, 0x11, 0x00, 0x00]
+      &[0x01, 0x26, 0x07, 0x11, 0x00, 0x00]
         .iter()
         .chain(config.mac.iter())
         .copied()
@@ -161,8 +154,7 @@ impl Ilogin for LoginGenerator {
   }
 
   fn get_logout_data(&self) -> DrResult<Vec<u8>> {
-    let binding = ConfigStore::get_instance().unwrap();
-    let config = binding.lock().unwrap();
+    let config = ConfigStore::get_instance()?;
     let mut data = vec![0u8; 80];
     data[0] = 0x06; //code
     data[1] = 0x01; //type
@@ -205,6 +197,10 @@ impl Ilogin for LoginGenerator {
     let mut buf = [0; 1024];
     socket.recv(&mut buf)?;
     if buf[0] == 0x04 {
+      // save tail
+      ConfigStore::get_instance()?
+        .tail
+        .copy_from_slice(&buf[23..39]);
       return Ok(());
     }
     if buf[0] == 0x05 && buf[4] == 0x0b {
@@ -246,7 +242,10 @@ impl Default for LoginGenerator {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::app::{modules::generator::ChallengeGenerator, utils::interface::Ichallenge};
+  use crate::app::{
+    modules::generator::ChallengeGenerator,
+    utils::{config, interface::Ichallenge},
+  };
 
   #[test]
   #[ignore = "need a valid config"]
@@ -255,16 +254,8 @@ mod tests {
     ConfigStore::init().unwrap();
 
     // test settings
-    ConfigStore::get_instance()
-      .unwrap()
-      .lock()
-      .unwrap()
-      .username = "username".to_string();
-    ConfigStore::get_instance()
-      .unwrap()
-      .lock()
-      .unwrap()
-      .password = "password".to_string();
+    ConfigStore::get_instance().unwrap().username = "username".to_string();
+    ConfigStore::get_instance().unwrap().password = "password".to_string();
 
     let mut cgen = ChallengeGenerator::new();
     let mut lgen = LoginGenerator::new();
@@ -273,6 +264,6 @@ mod tests {
     let clg_res = cgen.challenge(&mut socket);
     assert!(clg_res.is_ok());
     let login_res = lgen.login(&mut socket);
-    assert!(login_res.is_ok());
+    assert!(login_res.is_err());
   }
 }

@@ -8,7 +8,7 @@ use crate::app::utils::cli;
 use self::{
   modules::{
     connection::{self, DrcomConnection},
-    generator::ChallengeGenerator,
+    generator::{ChallengeGenerator, LoginGenerator},
   },
   utils::{config::ConfigStore, error::DrResult},
 };
@@ -27,9 +27,9 @@ impl App {
   pub fn run(&self) -> DrResult<()> {
     match &self.cli_args.command {
       cli::Commands::Run { username, password } => {
-        ConfigStore::get_instance()?.lock().unwrap().username = username.clone();
-        ConfigStore::get_instance()?.lock().unwrap().password = password.clone();
-        DrcomConnection::<ChallengeGenerator>::new()?.run()
+        ConfigStore::get_instance()?.username = username.clone();
+        ConfigStore::get_instance()?.password = password.clone();
+        DrcomConnection::<ChallengeGenerator, LoginGenerator>::new()?.run()
       }
     }
   }
