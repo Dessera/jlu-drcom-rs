@@ -2,7 +2,7 @@ use super::error::DrResult;
 use crate::app::utils::error::DrcomError;
 use lazy_static::lazy_static;
 use log::error;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard};
 
 pub type ConfigResult<'a> = DrResult<MutexGuard<'a, ConfigStore>>;
 
@@ -69,21 +69,11 @@ impl ConfigStore {
       dhcp_server: [0u8; 4],
     })
   }
-
-  // Singleton pattern for ConfigStore
-  // pub fn get_instance() -> ConfigResult {
-  //   static mut INSTANCE: Option<ConfigStore> = None;
-  //   unsafe {
-  //     if INSTANCE.is_none() {
-  //       INSTANCE = Some(ConfigStore::new()?);
-  //     }
-  //     Ok(INSTANCE.clone())
-  //   }
-  // }
 }
 
 // Singleton pattern for ConfigStore
 // Mutiple thread is not supported
+// TODO: How to remove this unwrap?
 lazy_static! {
   static ref INSTANCE: Mutex<ConfigStore> = {
     let config = ConfigStore::new().unwrap();

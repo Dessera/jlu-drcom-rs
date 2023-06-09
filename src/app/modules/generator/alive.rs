@@ -1,12 +1,7 @@
-use crate::app::utils::config;
-use crate::app::utils::config::ConfigResult;
 use crate::app::utils::config::ConfigStore;
 use crate::app::utils::crc;
 use crate::app::utils::error::DrResult;
-use crate::app::utils::error::DrcomError;
-use crate::app::utils::interface::Ichallenge;
 use crate::app::utils::interface::Ikeepalive;
-use log::{error, info};
 
 #[derive(Default)]
 pub struct KeepAliveGenerator {
@@ -81,16 +76,35 @@ impl Ikeepalive for KeepAliveGenerator {
     )
   }
   fn keepalive(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
+    let mut buf = vec![0u8; 1024];
+    let mut config = ConfigStore::get_instance()?;
     loop {
-      let mut buf = vec![0u8; 1024];
       // 38 pack first
       let keep_38 = self.get_keep_38()?;
       socket.send(&keep_38)?;
       socket.recv(&mut buf)?;
+      config.keep_alive_version.clone_from(&(buf[28], buf[29]));
 
-      ConfigStore::get_instance()?
-        .keep_alive_version
-        .clone_from(&(buf[28], buf[29]));
+      // 40 extra
+      if self.keep_40_count % 21 == 0 {
+        let keep_40 = self.get_keep_40(AliveType::EXTRA)?;
+        socket.send(&keep_40)?;
+        socket.recv(&mut buf)?;
+      }
+
+      // 40 first
+      let keep_40 = self.get_keep_40(AliveType::FIRST)?;
+      socket.send(&keep_40)?;
+      socket.recv(&mut buf)?;
+      config.tail_2.copy_from_slice(&buf[16..20]);
+
+      // 40 second
+      let keep_40 = self.get_keep_40(AliveType::SECOND)?;
+      socket.send(&keep_40)?;
+      socket.recv(&mut buf)?;
+
+      // thread sleep 20s
+      std::thread::sleep(std::time::Duration::from_secs(20));
     }
   }
 }

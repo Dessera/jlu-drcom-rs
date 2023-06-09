@@ -1,8 +1,4 @@
-use std::sync::{PoisonError, MutexGuard};
-
 use thiserror::Error;
-
-use super::config::ConfigStore;
 
 #[derive(Debug, Error)]
 pub enum DrcomError {

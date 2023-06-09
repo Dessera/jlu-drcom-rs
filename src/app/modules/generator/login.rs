@@ -2,12 +2,13 @@ use rand::random;
 
 use crate::app::utils::{
   checksum,
-  config::{self, ConfigStore},
+  config::ConfigStore,
   error::{DrResult, DrcomError},
   interface::Ilogin,
   ror,
 };
 
+#[derive(Default)]
 pub struct LoginGenerator {}
 
 impl Ilogin for LoginGenerator {
@@ -227,25 +228,10 @@ impl Ilogin for LoginGenerator {
   }
 }
 
-impl LoginGenerator {
-  fn new() -> Self {
-    Self {}
-  }
-}
-
-impl Default for LoginGenerator {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::app::{
-    modules::generator::ChallengeGenerator,
-    utils::{config, interface::Ichallenge},
-  };
+  use crate::app::{modules::generator::ChallengeGenerator, utils::interface::Ichallenge};
 
   #[test]
   #[ignore = "need a valid config"]
@@ -258,7 +244,7 @@ mod tests {
     ConfigStore::get_instance().unwrap().password = "password".to_string();
 
     let mut cgen = ChallengeGenerator::new();
-    let mut lgen = LoginGenerator::new();
+    let mut lgen = LoginGenerator::default();
     let mut socket = std::net::UdpSocket::bind("0.0.0.0:0").unwrap();
     socket.connect("10.100.61.3:61440").unwrap();
     let clg_res = cgen.challenge(&mut socket);

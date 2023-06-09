@@ -7,8 +7,8 @@ use crate::app::utils::cli;
 
 use self::{
   modules::{
-    connection::{self, DrcomConnection},
-    generator::{ChallengeGenerator, LoginGenerator},
+    connection::DrcomConnection,
+    generator::{ChallengeGenerator, KeepAliveGenerator, LoginGenerator},
   },
   utils::{config::ConfigStore, error::DrResult},
 };
@@ -29,7 +29,7 @@ impl App {
       cli::Commands::Run { username, password } => {
         ConfigStore::get_instance()?.username = username.clone();
         ConfigStore::get_instance()?.password = password.clone();
-        DrcomConnection::<ChallengeGenerator, LoginGenerator>::new()?.run()
+        DrcomConnection::<ChallengeGenerator, LoginGenerator, KeepAliveGenerator>::new()?.run()
       }
     }
   }

@@ -2,23 +2,26 @@ use log::info;
 
 use crate::app::utils::{
   error::DrResult,
-  interface::{Ichallenge, Ilogin},
+  interface::{Ichallenge, Ikeepalive, Ilogin},
 };
 
-pub struct DrcomConnection<Challenger, Loginer>
+pub struct DrcomConnection<Challenger, Loginer, Aliver>
 where
-  Challenger: Ichallenge,
-  Loginer: Ilogin,
+  Challenger: Ichallenge + Default,
+  Loginer: Ilogin + Default,
+  Aliver: Ikeepalive + Default,
 {
   pub socket: std::net::UdpSocket,
   pub challenger: Challenger,
   pub loginer: Loginer,
+  pub aliver: Aliver,
 }
 
-impl<Challenger, Loginer> DrcomConnection<Challenger, Loginer>
+impl<Challenger, Loginer, Aliver> DrcomConnection<Challenger, Loginer, Aliver>
 where
   Challenger: Ichallenge + Default,
   Loginer: Ilogin + Default,
+  Aliver: Ikeepalive + Default,
 {
   pub fn new() -> DrResult<Self> {
     let socket = std::net::UdpSocket::bind("0.0.0.0:0")?;
@@ -28,6 +31,7 @@ where
       socket,
       challenger: Challenger::default(),
       loginer: Loginer::default(),
+      aliver: Aliver::default(),
     })
   }
 
@@ -39,6 +43,9 @@ where
     info!("start login");
     self.loginer.login(&mut self.socket)?;
     info!("login success");
+
+    info!("start keep alive");
+    self.aliver.keepalive(&mut self.socket)?;
 
     Ok(())
   }
