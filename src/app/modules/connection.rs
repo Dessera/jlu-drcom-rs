@@ -15,6 +15,8 @@ where
   pub challenger: Challenger,
   pub loginer: Loginer,
   pub aliver: Aliver,
+
+  pub running: bool,
 }
 
 impl<Challenger, Loginer, Aliver> DrcomConnection<Challenger, Loginer, Aliver>
@@ -32,6 +34,8 @@ where
       challenger: Challenger::default(),
       loginer: Loginer::default(),
       aliver: Aliver::default(),
+
+      running: true,
     })
   }
 
@@ -45,7 +49,10 @@ where
     info!("login success");
 
     info!("start keep alive");
-    self.aliver.keepalive(&mut self.socket)?;
+    while self.running {
+      self.aliver.keepalive(&mut self.socket)?;
+      std::thread::sleep(std::time::Duration::from_secs(20));
+    }
 
     Ok(())
   }

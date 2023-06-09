@@ -78,33 +78,30 @@ impl Ikeepalive for KeepAliveGenerator {
   fn keepalive(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
     let mut buf = vec![0u8; 1024];
     let mut config = ConfigStore::get_instance()?;
-    loop {
-      // 38 pack first
-      let keep_38 = self.get_keep_38()?;
-      socket.send(&keep_38)?;
-      socket.recv(&mut buf)?;
-      config.keep_alive_version.clone_from(&(buf[28], buf[29]));
+    // 38 pack first
+    let keep_38 = self.get_keep_38()?;
+    socket.send(&keep_38)?;
+    socket.recv(&mut buf)?;
+    config.keep_alive_version.clone_from(&(buf[28], buf[29]));
 
-      // 40 extra
-      if self.keep_40_count % 21 == 0 {
-        let keep_40 = self.get_keep_40(AliveType::EXTRA)?;
-        socket.send(&keep_40)?;
-        socket.recv(&mut buf)?;
-      }
-
-      // 40 first
-      let keep_40 = self.get_keep_40(AliveType::FIRST)?;
+    // 40 extra
+    if self.keep_40_count % 21 == 0 {
+      let keep_40 = self.get_keep_40(AliveType::EXTRA)?;
       socket.send(&keep_40)?;
       socket.recv(&mut buf)?;
-      config.tail_2.copy_from_slice(&buf[16..20]);
-
-      // 40 second
-      let keep_40 = self.get_keep_40(AliveType::SECOND)?;
-      socket.send(&keep_40)?;
-      socket.recv(&mut buf)?;
-
-      // thread sleep 20s
-      std::thread::sleep(std::time::Duration::from_secs(20));
     }
+
+    // 40 first
+    let keep_40 = self.get_keep_40(AliveType::FIRST)?;
+    socket.send(&keep_40)?;
+    socket.recv(&mut buf)?;
+    config.tail_2.copy_from_slice(&buf[16..20]);
+
+    // 40 second
+    let keep_40 = self.get_keep_40(AliveType::SECOND)?;
+    socket.send(&keep_40)?;
+    socket.recv(&mut buf)?;
+
+    Ok(())
   }
 }

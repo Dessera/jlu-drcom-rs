@@ -5,6 +5,9 @@ pub enum DrcomError {
   #[error("Io error: {0}")]
   IoError(#[from] std::io::Error),
 
+  #[error("Parse error: {0}")]
+  ParseError(#[from] std::num::ParseIntError),
+
   #[error("lock error: {0}")]
   LockError(String),
 

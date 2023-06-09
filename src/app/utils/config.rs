@@ -18,10 +18,10 @@ pub struct ConfigStore {
   // command line args
   pub username: String,
   pub password: String,
+  pub mac: [u8; 6],
 
   // pc or file config
   pub hostname: String,
-  pub mac: [u8; 6],
 
   // static config
   pub primary_dns: [u8; 4],
@@ -34,24 +34,20 @@ pub struct ConfigStore {
 impl ConfigStore {
   pub fn init() -> DrResult<()> {
     // init store immediately
-    ConfigStore::get_instance()?;
-    Ok(())
-  }
-
-  // implement in test case
-  pub fn new() -> DrResult<Self> {
-    // TODO: Find a way scan interfaces which suitable for windows
-    //       I don't know why pnet conpile failed on mingw
-
-    // TODO: Error handle, it's not a good idea to abort
-    let hostnm: String = match hostname::get()?.into_string() {
+    let mut config = ConfigStore::get_instance()?;
+    config.hostname = match hostname::get()?.into_string() {
       Ok(s) => s,
       Err(_) => {
         error!("cannot get hostname");
         return Err(DrcomError::OsError("cannot get hostname".to_string()));
       }
     };
-    Ok(Self {
+    Ok(())
+  }
+
+  // implement in test case
+  pub fn new() -> Self {
+    Self {
       salt: [0u8; 4],
       md5a: [0u8; 16],
       tail: [0u8; 16],
@@ -60,23 +56,21 @@ impl ConfigStore {
       keep_alive_version: (0, 0),
       username: String::new(),
       password: String::new(),
-      hostname: hostnm,
+      hostname: String::new(),
       mac: [0xFC, 0x34, 0x97, 0x95, 0x27, 0xAF],
       primary_dns: [10, 10, 10, 10],
 
-      // TODO: now the place use my dns server (consider remove this)
-      secondary_dns: [202, 98, 18, 3],
+      secondary_dns: [0u8; 4],
       dhcp_server: [0u8; 4],
-    })
+    }
   }
 }
 
 // Singleton pattern for ConfigStore
 // Mutiple thread is not supported
-// TODO: How to remove this unwrap?
 lazy_static! {
   static ref INSTANCE: Mutex<ConfigStore> = {
-    let config = ConfigStore::new().unwrap();
+    let config = ConfigStore::new();
     Mutex::new(config)
   };
 }
