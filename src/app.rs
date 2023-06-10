@@ -18,7 +18,6 @@ pub async fn run() -> DrResult<()> {
       ConfigStore::modify(|config| {
         config.username = username.clone();
         config.password = password.clone();
-        // parse mac address 12:34:56:78:9A:BC to [u8; 6]
         config.mac = mac
           .split(':')
           .map(|x| u8::from_str_radix(x, 16))

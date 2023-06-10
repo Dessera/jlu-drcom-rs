@@ -174,7 +174,9 @@ impl LoginGenerator {
     data[4..20].copy_from_slice(&md5a.0);
 
     // uname ljust 36
-    data[20..56].copy_from_slice(config.username.as_bytes());
+    let mut uname = config.username.as_bytes().to_vec();
+    uname.resize(36, 0x00);
+    data[20..56].copy_from_slice(&uname);
 
     // 0x20 0x05
     data[56] = 0x20;

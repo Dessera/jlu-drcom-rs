@@ -1,6 +1,7 @@
 use log::info;
 
 use crate::utils::error::DrResult;
+use tokio::signal::unix::{signal, SignalKind};
 
 use super::generator::{ChallengeGenerator, KeepAliveGenerator, LoginGenerator};
 
@@ -9,8 +10,6 @@ pub struct DrcomConnection {
   pub challenger: ChallengeGenerator,
   pub loginer: LoginGenerator,
   pub aliver: KeepAliveGenerator,
-
-  pub running: bool,
 }
 
 impl DrcomConnection {
@@ -22,8 +21,6 @@ impl DrcomConnection {
       challenger: ChallengeGenerator::default(),
       loginer: LoginGenerator::default(),
       aliver: KeepAliveGenerator::default(),
-
-      running: true,
     })
   }
 
@@ -37,11 +34,39 @@ impl DrcomConnection {
     info!("login success");
 
     info!("start keep alive");
-    while self.running {
-      self.aliver.keepalive(&mut self.socket).await?;
-      std::thread::sleep(std::time::Duration::from_secs(20));
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(20));
+    loop {
+      tokio::select! {
+        _ = self.signal_task() => {
+          break;
+        },
+        _ = interval.tick() => {
+          self.aliver.keepalive(&mut self.socket).await?;
+        }
+      }
     }
 
+    info!("receive signal, start logout");
+    self.loginer.logout(&mut self.socket).await?;
+    info!("logout success");
+
     Ok(())
+  }
+
+  async fn signal_task(&self) {
+    let mut sigint = signal(SignalKind::interrupt()).unwrap();
+    let mut sigterm = signal(SignalKind::terminate()).unwrap();
+    let mut sigquit = signal(SignalKind::quit()).unwrap();
+    tokio::select! {
+      _ = sigint.recv() => {
+        info!("receive SIGINT");
+      },
+      _ = sigterm.recv() => {
+        info!("receive SIGTERM");
+      },
+      _ = sigquit.recv() => {
+        info!("receive SIGQUIT");
+      }
+    }
   }
 }
