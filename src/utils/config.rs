@@ -14,9 +14,6 @@ pub type ConfigResult<'a> = DrResult<MutexGuard<'a, ConfigStore>>;
 /// 2. command line args, which is parsed from command line
 /// 3. pc or file config, which is read from pc or file
 /// 4. static config, which is hard coded in the program
-/// 
-/// Note that the config is not thread safe, and it is not necessary to
-/// make it thread safe.
 pub struct ConfigStore {
   // runtime config
   pub salt: [u8; 4],
@@ -77,6 +74,15 @@ impl ConfigStore {
       secondary_dns: [0u8; 4],
       dhcp_server: [0u8; 4],
     }
+  }
+
+  /// modify the config.
+  pub fn modify<F>(f: F) -> DrResult<()>
+  where
+    F: FnOnce(&mut Self) -> DrResult<()>,
+  {
+    let mut config = ConfigStore::get_instance().unwrap();
+    f(&mut config)
   }
 }
 

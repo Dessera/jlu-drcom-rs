@@ -1,17 +1,17 @@
 use rand::random;
+use tokio::net::UdpSocket;
 
 use crate::utils::{
   checksum,
   config::ConfigStore,
   error::{DrResult, DrcomError},
-  interface::Ilogin,
   ror,
 };
 
 #[derive(Default)]
 pub struct LoginGenerator {}
 
-impl Ilogin for LoginGenerator {
+impl LoginGenerator {
   fn get_login_data(&self) -> DrResult<Vec<u8>> {
     // config instance get
     let mut config = ConfigStore::get_instance()?;
@@ -192,11 +192,11 @@ impl Ilogin for LoginGenerator {
     Ok(data)
   }
 
-  fn login(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
+  pub async fn login(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
     let data = self.get_login_data()?;
-    socket.send(&data)?;
+    socket.send(&data).await?;
     let mut buf = [0; 1024];
-    socket.recv(&mut buf)?;
+    socket.recv(&mut buf).await?;
     if buf[0] == 0x04 {
       // save tail
       ConfigStore::get_instance()?
@@ -215,11 +215,11 @@ impl Ilogin for LoginGenerator {
     }
   }
 
-  fn logout(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
+  pub async fn logout(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
     let data = self.get_logout_data()?;
-    socket.send(&data)?;
+    socket.send(&data).await?;
     let mut buf = [0; 512];
-    socket.recv(&mut buf)?;
+    socket.recv(&mut buf).await?;
     if buf[0] == 0x04 {
       return Ok(());
     } else {
@@ -231,11 +231,11 @@ impl Ilogin for LoginGenerator {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{modules::generator::ChallengeGenerator, utils::interface::Ichallenge};
+  use crate::modules::generator::ChallengeGenerator;
 
-  #[test]
+  #[tokio::test]
   #[ignore = "need a valid config"]
-  fn test_login() {
+  async fn test_login() {
     simple_logger::init().unwrap();
     ConfigStore::init().unwrap();
 
@@ -243,13 +243,13 @@ mod tests {
     ConfigStore::get_instance().unwrap().username = "username".to_string();
     ConfigStore::get_instance().unwrap().password = "password".to_string();
 
-    let mut cgen = ChallengeGenerator::new();
+    let mut cgen = ChallengeGenerator::default();
     let mut lgen = LoginGenerator::default();
-    let mut socket = std::net::UdpSocket::bind("0.0.0.0:0").unwrap();
-    socket.connect("10.100.61.3:61440").unwrap();
-    let clg_res = cgen.challenge(&mut socket);
+    let mut socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await.unwrap();
+    socket.connect("10.100.61.3:61440").await.unwrap();
+    let clg_res = cgen.challenge(&mut socket).await;
     assert!(clg_res.is_ok());
-    let login_res = lgen.login(&mut socket);
+    let login_res = lgen.login(&mut socket).await;
     assert!(login_res.is_err());
   }
 }

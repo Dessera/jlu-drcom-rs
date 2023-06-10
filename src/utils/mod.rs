@@ -1,7 +1,6 @@
 pub mod cli;
 pub mod config;
 pub mod error;
-pub mod interface;
 
 pub fn ror(data: &[u8], pwd: &[u8]) -> Vec<u8> {
   let mut ret = Vec::new();

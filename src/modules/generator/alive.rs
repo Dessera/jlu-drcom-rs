@@ -1,4 +1,6 @@
-use crate::utils::{config::ConfigStore, crc, error::DrResult, interface::Ikeepalive};
+use tokio::net::UdpSocket;
+
+use crate::utils::{config::ConfigStore, crc, error::DrResult};
 
 #[derive(Default)]
 pub struct KeepAliveGenerator {
@@ -66,38 +68,33 @@ impl KeepAliveGenerator {
   }
 }
 
-impl Ikeepalive for KeepAliveGenerator {
-  fn get_keepalive_data(&self) -> DrResult<Vec<u8>> {
-    unimplemented!(
-      "keep alive need more than one function, so a default function is not implemented"
-    )
-  }
-  fn keepalive(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
+impl KeepAliveGenerator {
+  pub async fn keepalive(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
     let mut buf = vec![0u8; 1024];
     let mut config = ConfigStore::get_instance()?;
     // 38 pack first
     let keep_38 = self.get_keep_38()?;
-    socket.send(&keep_38)?;
-    socket.recv(&mut buf)?;
+    socket.send(&keep_38).await?;
+    socket.recv(&mut buf).await?;
     config.keep_alive_version.clone_from(&(buf[28], buf[29]));
 
     // 40 extra
     if self.keep_40_count % 21 == 0 {
       let keep_40 = self.get_keep_40(AliveType::EXTRA)?;
-      socket.send(&keep_40)?;
-      socket.recv(&mut buf)?;
+      socket.send(&keep_40).await?;
+      socket.recv(&mut buf).await?;
     }
 
     // 40 first
     let keep_40 = self.get_keep_40(AliveType::FIRST)?;
-    socket.send(&keep_40)?;
-    socket.recv(&mut buf)?;
+    socket.send(&keep_40).await?;
+    socket.recv(&mut buf).await?;
     config.tail_2.copy_from_slice(&buf[16..20]);
 
     // 40 second
     let keep_40 = self.get_keep_40(AliveType::SECOND)?;
-    socket.send(&keep_40)?;
-    socket.recv(&mut buf)?;
+    socket.send(&keep_40).await?;
+    socket.recv(&mut buf).await?;
 
     Ok(())
   }

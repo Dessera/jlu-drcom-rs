@@ -1,29 +1,30 @@
-use rand::random;
 use crate::utils::{
   config::ConfigStore,
   error::{DrResult, DrcomError},
-  interface::Ichallenge,
 };
 use log::error;
+use rand::random;
+use tokio::net::UdpSocket;
 
 /// Implementation of Ichallenge,
 /// Generate challenge data and send it to server
 ///
+#[derive(Default)]
 pub struct ChallengeGenerator {
   pub try_times: u8,
 }
 
-impl Ichallenge for ChallengeGenerator {
-  fn challenge(&mut self, socket: &mut std::net::UdpSocket) -> DrResult<()> {
+impl ChallengeGenerator {
+  pub async fn challenge(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
     let mut config = ConfigStore::get_instance()?;
     while self.try_times < 5 {
       // get & send challenge data
       let data = self.get_challenge_data()?;
-      socket.send(&data)?;
+      socket.send(&data).await?;
 
       // receive challenge data
       let mut buf = [0; 1024];
-      let _ = socket.recv(&mut buf);
+      socket.recv(&mut buf).await?;
 
       if buf[0] == 0x02 {
         config.salt = [buf[4], buf[5], buf[6], buf[7]];
@@ -46,31 +47,19 @@ impl Ichallenge for ChallengeGenerator {
   }
 }
 
-impl Default for ChallengeGenerator {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
-impl ChallengeGenerator {
-  pub fn new() -> Self {
-    Self { try_times: 0 }
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
 
-  #[test]
-  fn test_challenge() {
+  #[tokio::test]
+  async fn test_challenge() {
     simple_logger::init().unwrap();
     ConfigStore::init().unwrap();
 
-    let mut generator = ChallengeGenerator::new();
-    let mut socket = std::net::UdpSocket::bind("0.0.0.0:0").unwrap();
-    socket.connect("10.100.61.3:61440").unwrap();
-    let result = generator.challenge(&mut socket);
+    let mut generator = ChallengeGenerator::default();
+    let mut socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await.unwrap();
+    socket.connect("10.100.61.3:61440").await.unwrap();
+    let result = generator.challenge(&mut socket).await;
     assert!(result.is_ok());
   }
 }

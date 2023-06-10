@@ -1,7 +1,11 @@
-use jlu_drcom_rs::{app::App, utils::config::ConfigStore};
+use jlu_drcom_rs::{
+  app::run,
+  utils::{config::ConfigStore, error::DrcomError},
+};
 use log::{error, info};
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), DrcomError> {
   // init logger
   simple_logger::init().unwrap_or_else(|_| {
     eprintln!("Logger init failed.");
@@ -18,8 +22,10 @@ fn main() {
 
   // run app
   info!("App start.");
-  App::new().run().unwrap_or_else(|e| {
+  run().await.unwrap_or_else(|e| {
     error!("{}", e);
     std::process::exit(1);
-  })
+  });
+  info!("App exit.");
+  Ok(())
 }
