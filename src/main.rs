@@ -1,28 +1,37 @@
+use clap::Parser;
 use jlu_drcom_rs::{
-  app::run,
+  app::app_run,
   utils::{config::ConfigStore, error::DrcomError},
 };
 use log::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), DrcomError> {
-  // init logger
+  // 初始化Cli
+  // 在这之后初始化会导致先输出日志
+  let cli_args = jlu_drcom_rs::utils::cli::Cli::parse();
+
+  // 初始化Logger
+  // 如果失败了，只能使用eprintln!输出
   simple_logger::init().unwrap_or_else(|_| {
     eprintln!("Logger init failed.");
     std::process::exit(1);
   });
   info!("Logger init success.");
 
-  // init config
+  // 初始化设置
+  // 会生成单例ConfigStore，但实际上也可以不在这里初始化
+  // TODO： 考虑移除这里的初始化，因为可能会导致不用到ConfigStore的时候，也会初始化
   ConfigStore::init().unwrap_or_else(|e| {
     error!("{}", e);
     std::process::exit(1);
   });
   info!("Config init success.");
 
-  // run app
+  // 运行主程序
+  // 使用函数初始化，个人感觉没必要构造类
   info!("App start.");
-  run().await.unwrap_or_else(|e| {
+  app_run(cli_args).await.unwrap_or_else(|e| {
     error!("{}", e);
     std::process::exit(1);
   });

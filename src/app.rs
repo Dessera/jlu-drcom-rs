@@ -1,5 +1,3 @@
-use clap::Parser;
-
 use crate::utils::cli;
 
 use crate::{
@@ -7,9 +5,10 @@ use crate::{
   utils::{config::ConfigStore, error::DrResult},
 };
 
-pub async fn run() -> DrResult<()> {
-  let cli_args = cli::Cli::parse();
+pub async fn app_run(cli_args: cli::Cli) -> DrResult<()> {
   match cli_args.command {
+
+    // Run: 运行Drcom主程序
     cli::Commands::Run {
       username,
       password,

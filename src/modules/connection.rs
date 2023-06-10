@@ -58,15 +58,9 @@ impl DrcomConnection {
     let mut sigterm = signal(SignalKind::terminate()).unwrap();
     let mut sigquit = signal(SignalKind::quit()).unwrap();
     tokio::select! {
-      _ = sigint.recv() => {
-        info!("receive SIGINT");
-      },
-      _ = sigterm.recv() => {
-        info!("receive SIGTERM");
-      },
-      _ = sigquit.recv() => {
-        info!("receive SIGQUIT");
-      }
+      _ = sigint.recv() => {},
+      _ = sigterm.recv() => {},
+      _ = sigquit.recv() => {}
     }
   }
 }
