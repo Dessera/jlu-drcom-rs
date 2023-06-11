@@ -1,7 +1,6 @@
 use log::info;
 
 use crate::utils::error::DrResult;
-use tokio::signal::unix::{signal, SignalKind};
 
 use super::generator::{ChallengeGenerator, KeepAliveGenerator, LoginGenerator};
 
@@ -37,7 +36,8 @@ impl DrcomConnection {
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(20));
     loop {
       tokio::select! {
-        _ = self.signal_task() => {
+        res = self.signal_task() => {
+          res?;
           break;
         },
         _ = interval.tick() => {
@@ -53,14 +53,28 @@ impl DrcomConnection {
     Ok(())
   }
 
-  async fn signal_task(&self) {
-    let mut sigint = signal(SignalKind::interrupt()).unwrap();
-    let mut sigterm = signal(SignalKind::terminate()).unwrap();
-    let mut sigquit = signal(SignalKind::quit()).unwrap();
+  #[cfg(target_os = "linux")]
+  async fn signal_task(&self) -> DrResult<()> {
+    use tokio::signal::unix::{signal, SignalKind};
+    let mut sigint = signal(SignalKind::interrupt())?;
+    let mut sigterm = signal(SignalKind::terminate())?;
+    let mut sigquit = signal(SignalKind::quit())?;
     tokio::select! {
       _ = sigint.recv() => {},
       _ = sigterm.recv() => {},
       _ = sigquit.recv() => {}
+    }
+    Ok(())
+  }
+
+  #[cfg(target_os = "windows")]
+  async fn signal_task(&self) -> DrResult<()> {
+    use tokio::signal::windows::{ctrl_break, ctrl_c};
+    let mut sigint = ctrl_c()?;
+    let mut sigterm = ctrl_break()?;
+    tokio::select! {
+      _ = sigint.recv() => {},
+      _ = sigterm.recv() => {}
     }
   }
 }
