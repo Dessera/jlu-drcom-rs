@@ -7,8 +7,6 @@ use crate::{
 
 pub async fn app_run(cli_args: cli::Cli) -> DrResult<()> {
   match cli_args.command {
-
-    // Run: 运行Drcom主程序
     cli::Commands::Run {
       username,
       password,
