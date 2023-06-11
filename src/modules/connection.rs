@@ -76,5 +76,6 @@ impl DrcomConnection {
       _ = sigint.recv() => {},
       _ = sigterm.recv() => {}
     }
+    Ok(())
   }
 }
