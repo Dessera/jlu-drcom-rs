@@ -76,13 +76,20 @@ impl ConfigStore {
     }
   }
 
-  /// modify the config.
-  pub fn modify<F>(f: F) -> DrResult<()>
+  pub fn set<F>(f: F) -> DrResult<()>
   where
     F: FnOnce(&mut Self) -> DrResult<()>,
   {
-    let mut config = ConfigStore::get_instance().unwrap();
+    let mut config = ConfigStore::get_instance()?;
     f(&mut config)
+  }
+
+  pub fn get<F, Rt>(f: F) -> DrResult<Rt>
+  where
+    F: FnOnce(&Self) -> DrResult<Rt>,
+  {
+    let config = ConfigStore::get_instance()?;
+    f(&config)
   }
 }
 

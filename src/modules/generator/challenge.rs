@@ -6,9 +6,6 @@ use log::error;
 use rand::random;
 use tokio::net::UdpSocket;
 
-/// Implementation of Ichallenge,
-/// Generate challenge data and send it to server
-///
 #[derive(Default)]
 pub struct ChallengeGenerator {
   pub try_times: u8,
@@ -41,8 +38,12 @@ impl ChallengeGenerator {
   }
 
   fn get_challenge_data(&self) -> DrResult<Vec<u8>> {
-    let mut data = vec![0x01, 0x02 + self.try_times, random(), random(), 0x6a];
-    data.resize(20, 0x00);
+    let mut data = vec![0x00; 20];
+    data[0] = 0x01;
+    data[1] = 0x02 + self.try_times;
+    data[2] = random();
+    data[3] = random();
+    data[4] = 0x6a;
     Ok(data)
   }
 }

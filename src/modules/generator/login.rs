@@ -252,6 +252,6 @@ mod tests {
     let clg_res = cgen.challenge(&mut socket).await;
     assert!(clg_res.is_ok());
     let login_res = lgen.login(&mut socket).await;
-    assert!(login_res.is_err());
+    assert!(login_res.is_ok());
   }
 }

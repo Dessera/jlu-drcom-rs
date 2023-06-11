@@ -12,7 +12,7 @@ pub async fn app_run(cli_args: cli::Cli) -> DrResult<()> {
       password,
       mac,
     } => {
-      ConfigStore::modify(|config| {
+      ConfigStore::set(|config| {
         config.username = username.clone();
         config.password = password.clone();
         config.mac = mac

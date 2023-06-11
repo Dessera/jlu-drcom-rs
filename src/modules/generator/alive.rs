@@ -16,13 +16,9 @@ pub enum AliveType {
 
 impl KeepAliveGenerator {
   pub fn get_keep_38(&self) -> DrResult<Vec<u8>> {
-    // 0xff md5a:16位 0x00 0x00 0x00 tail1:16位 rand1 rand2
     let mut data = vec![0u8; 38];
     data[0] = 0xff;
-    let (md5a, tail) = {
-      let config = ConfigStore::get_instance()?;
-      (config.md5a, config.tail)
-    };
+    let (md5a, tail) = ConfigStore::get(|config| Ok((config.md5a, config.tail)))?;
     data[1..17].copy_from_slice(&md5a);
     data[20..36].copy_from_slice(&tail);
     data[36] = rand::random::<u8>();
