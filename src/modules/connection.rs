@@ -36,8 +36,7 @@ impl DrcomConnection {
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(20));
     loop {
       tokio::select! {
-        res = self.signal_task() => {
-          res?;
+        _ = self.signal_task() => {
           break;
         },
         _ = interval.tick() => {
