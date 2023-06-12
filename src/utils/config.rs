@@ -41,9 +41,8 @@ pub struct ConfigStore {
 
 impl ConfigStore {
   /// Init the config store.
-  /// It will read the hostname from the system.
-  /// TODO: read the mac address from the system.
-  /// TODO: save / read the config from the file.
+  // TODO: read the mac address from the system.
+  // TODO: save / read the config from the file.
   pub fn init() -> DrResult<()> {
     let mut config = ConfigStore::get_instance()?;
     config.hostname = match hostname::get()?.into_string() {

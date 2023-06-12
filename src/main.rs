@@ -20,8 +20,7 @@ async fn main() -> Result<(), DrcomError> {
   info!("Logger init success.");
 
   // 初始化设置
-  // 会生成单例ConfigStore，但实际上也可以不在这里初始化
-  // TODO： 考虑移除这里的初始化，因为可能会导致不用到ConfigStore的时候，也会初始化
+  // 会生成单例ConfigStore，并初始化一些值
   ConfigStore::init().unwrap_or_else(|e| {
     error!("{}", e);
     std::process::exit(1);
