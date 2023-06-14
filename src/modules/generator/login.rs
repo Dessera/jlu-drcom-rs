@@ -1,11 +1,10 @@
 use rand::random;
-use tokio::net::UdpSocket;
 
 use crate::utils::{
   checksum,
   config::ConfigStore,
   error::{DrResult, DrcomError},
-  ror,
+  ror, sock::DrSocket,
 };
 
 #[derive(Default)]
@@ -194,11 +193,11 @@ impl LoginGenerator {
     Ok(data)
   }
 
-  pub async fn login(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
+  pub async fn login(&mut self, socket: &mut DrSocket) -> DrResult<()> {
     let data = self.get_login_data()?;
     socket.send(&data).await?;
     let mut buf = [0; 1024];
-    socket.recv(&mut buf).await?;
+    socket.recv_with_timeout(&mut buf).await?;
     if buf[0] == 0x04 {
       // save tail
       ConfigStore::get_instance()?
@@ -217,11 +216,11 @@ impl LoginGenerator {
     }
   }
 
-  pub async fn logout(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
+  pub async fn logout(&mut self, socket: &mut DrSocket) -> DrResult<()> {
     let data = self.get_logout_data()?;
     socket.send(&data).await?;
     let mut buf = [0; 512];
-    socket.recv(&mut buf).await?;
+    socket.recv_with_timeout(&mut buf).await?;
     if buf[0] == 0x04 {
       return Ok(());
     } else {
@@ -249,6 +248,7 @@ mod tests {
     let mut lgen = LoginGenerator::default();
     let mut socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await.unwrap();
     socket.connect("10.100.61.3:61440").await.unwrap();
+    let mut socket = DrSocket::new(socket);
     let clg_res = cgen.challenge(&mut socket).await;
     assert!(clg_res.is_ok());
     let login_res = lgen.login(&mut socket).await;

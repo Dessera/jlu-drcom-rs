@@ -14,6 +14,9 @@ pub enum DrcomError {
   #[error("Os error: {0}")]
   OsError(String),
 
+  #[error("Socket error: {0}")]
+  SocketError(String),
+
   #[error("Challenge error: {0}")]
   ChallengeError(String),
 

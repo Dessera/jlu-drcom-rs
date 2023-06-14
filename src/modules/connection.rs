@@ -1,11 +1,11 @@
 use log::info;
 
-use crate::utils::error::DrResult;
+use crate::utils::{error::DrResult, sock::DrSocket};
 
 use super::generator::{ChallengeGenerator, KeepAliveGenerator, LoginGenerator};
 
 pub struct DrcomConnection {
-  pub socket: tokio::net::UdpSocket,
+  pub socket: DrSocket,
   pub challenger: ChallengeGenerator,
   pub loginer: LoginGenerator,
   pub aliver: KeepAliveGenerator,
@@ -16,7 +16,7 @@ impl DrcomConnection {
     let socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await?;
     socket.connect("10.100.61.3:61440").await?;
     Ok(Self {
-      socket,
+      socket: DrSocket::new(socket),
       challenger: ChallengeGenerator::default(),
       loginer: LoginGenerator::default(),
       aliver: KeepAliveGenerator::default(),

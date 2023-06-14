@@ -1,7 +1,7 @@
 use log::info;
 use tokio::net::UdpSocket;
 
-use crate::utils::{config::ConfigStore, crc, error::DrResult};
+use crate::utils::{config::ConfigStore, crc, error::DrResult, sock::DrSocket};
 
 #[derive(Default)]
 pub struct KeepAliveGenerator {
@@ -70,12 +70,12 @@ impl KeepAliveGenerator {
 }
 
 impl KeepAliveGenerator {
-  pub async fn keepalive(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
+  pub async fn keepalive(&mut self, socket: &mut DrSocket) -> DrResult<()> {
     let mut buf = vec![0u8; 1024];
     // 38 pack first
     let keep_38 = self.get_keep_38()?;
     socket.send(&keep_38).await?;
-    socket.recv(&mut buf).await?;
+    socket.recv_with_timeout(&mut buf).await?;
     ConfigStore::get_instance()?
       .keep_alive_version
       .clone_from(&(buf[28], buf[29]));
@@ -84,14 +84,14 @@ impl KeepAliveGenerator {
     if self.keep_40_count % 21 == 0 {
       let keep_40 = self.get_keep_40(AliveType::EXTRA)?;
       socket.send(&keep_40).await?;
-      socket.recv(&mut buf).await?;
+      socket.recv_with_timeout(&mut buf).await?;
       info!("keepalive once round");
     }
 
     // 40 first
     let keep_40 = self.get_keep_40(AliveType::FIRST)?;
     socket.send(&keep_40).await?;
-    socket.recv(&mut buf).await?;
+    socket.recv_with_timeout(&mut buf).await?;
     ConfigStore::get_instance()?
       .tail_2
       .copy_from_slice(&buf[16..20]);
@@ -99,7 +99,7 @@ impl KeepAliveGenerator {
     // 40 second
     let keep_40 = self.get_keep_40(AliveType::SECOND)?;
     socket.send(&keep_40).await?;
-    socket.recv(&mut buf).await?;
+    socket.recv_with_timeout(&mut buf).await?;
 
     Ok(())
   }

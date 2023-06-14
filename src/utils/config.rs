@@ -2,7 +2,7 @@ use super::error::DrResult;
 use crate::utils::error::DrcomError;
 use lazy_static::lazy_static;
 use log::error;
-use std::sync::{Mutex, MutexGuard};
+use std::{sync::{Mutex, MutexGuard}, time::Duration};
 
 /// ConfigResult is a type alias of DrResult<MutexGuard<'a, ConfigStore>>.
 pub type ConfigResult<'a> = DrResult<MutexGuard<'a, ConfigStore>>;

@@ -1,6 +1,6 @@
 use crate::utils::{
   config::ConfigStore,
-  error::{DrResult, DrcomError},
+  error::{DrResult, DrcomError}, sock::DrSocket,
 };
 use log::error;
 use rand::random;
@@ -12,7 +12,7 @@ pub struct ChallengeGenerator {
 }
 
 impl ChallengeGenerator {
-  pub async fn challenge(&mut self, socket: &mut UdpSocket) -> DrResult<()> {
+  pub async fn challenge(&mut self, socket: &mut DrSocket) -> DrResult<()> {
     let mut config = ConfigStore::get_instance()?;
     while self.try_times < 5 {
       // get & send challenge data
@@ -21,7 +21,7 @@ impl ChallengeGenerator {
 
       // receive challenge data
       let mut buf = [0; 1024];
-      socket.recv(&mut buf).await?;
+      socket.recv_with_timeout(&mut buf).await?;
 
       if buf[0] == 0x02 {
         config.salt = [buf[4], buf[5], buf[6], buf[7]];
@@ -60,6 +60,7 @@ mod tests {
     let mut generator = ChallengeGenerator::default();
     let mut socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await.unwrap();
     socket.connect("10.100.61.3:61440").await.unwrap();
+    let mut socket = DrSocket::new(socket);
     let result = generator.challenge(&mut socket).await;
     assert!(result.is_ok());
   }
