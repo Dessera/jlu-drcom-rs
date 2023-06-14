@@ -1,5 +1,6 @@
 use crate::utils::cli;
 
+use crate::utils::log_file::remove_all_logfiles;
 use crate::{
   modules::connection::DrcomConnection,
   utils::{config::ConfigStore, error::DrResult},
@@ -26,5 +27,6 @@ pub async fn app_run(cli_args: cli::Cli) -> DrResult<()> {
       })?;
       DrcomConnection::create(timeout).await?.run().await
     }
+    cli::Commands::Clear {} => remove_all_logfiles(),
   }
 }

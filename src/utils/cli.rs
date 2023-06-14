@@ -25,4 +25,5 @@ pub enum Commands {
     #[arg(help = "receive timeout in seconds", short, long, default_value = "5")]
     timeout: u64,
   },
+  Clear {}
 }
