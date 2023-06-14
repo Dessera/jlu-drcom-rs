@@ -11,10 +11,11 @@ pub async fn app_run(cli_args: cli::Cli) -> DrResult<()> {
       username,
       password,
       mac,
+      timeout,
     } => {
       ConfigStore::set(|config| {
-        config.username = username.clone();
-        config.password = password.clone();
+        config.username = username;
+        config.password = password;
         config.mac = mac
           .split(':')
           .map(|x| u8::from_str_radix(x, 16))
@@ -23,7 +24,7 @@ pub async fn app_run(cli_args: cli::Cli) -> DrResult<()> {
           .unwrap_or([0; 6]);
         Ok(())
       })?;
-      DrcomConnection::create().await?.run().await
+      DrcomConnection::create(timeout).await?.run().await
     }
   }
 }

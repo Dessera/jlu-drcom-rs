@@ -6,5 +6,5 @@ jlu drcom客户端的rust实现
 # Usage
 因为一些兼容性问题，需要手动指定mac地址
 ```shell
-jlu-drcom-rs run -u username -p password -m mac
+jlu-drcom-rs run -u username -p password -m mac -t timeout(5)
 ```

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use log::info;
 
 use crate::utils::{error::DrResult, sock::DrSocket};
@@ -12,11 +14,10 @@ pub struct DrcomConnection {
 }
 
 impl DrcomConnection {
-  pub async fn create() -> DrResult<Self> {
-    let socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await?;
-    socket.connect("10.100.61.3:61440").await?;
+  pub async fn create(timeout: u64) -> DrResult<Self> {
+    let socket = DrSocket::create("0.0.0.0:0", Duration::from_secs(timeout)).await?;
     Ok(Self {
-      socket: DrSocket::new(socket),
+      socket,
       challenger: ChallengeGenerator::default(),
       loginer: LoginGenerator::default(),
       aliver: KeepAliveGenerator::default(),

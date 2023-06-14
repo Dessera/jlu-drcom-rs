@@ -1,5 +1,4 @@
 use log::info;
-use tokio::net::UdpSocket;
 
 use crate::utils::{config::ConfigStore, crc, error::DrResult, sock::DrSocket};
 

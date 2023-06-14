@@ -11,11 +11,10 @@ pub struct DrSocket {
 }
 
 impl DrSocket {
-  pub fn new(socket: UdpSocket) -> Self {
-    Self {
-      socket,
-      timeout: Duration::from_secs(5),
-    }
+  pub async fn create(addr: &str, timeout: Duration) -> DrResult<Self> {
+    let socket = UdpSocket::bind(addr).await?;
+    socket.connect("10.100.61.3:61440").await?;
+    Ok(Self { socket, timeout })
   }
 
   pub async fn send(&mut self, buf: &[u8]) -> DrResult<()> {

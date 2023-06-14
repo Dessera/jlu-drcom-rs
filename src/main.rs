@@ -1,9 +1,20 @@
+use std::{fs::File, io};
+
 use clap::Parser;
 use jlu_drcom_rs::{
   app::app_run,
   utils::{config::ConfigStore, error::DrcomError},
 };
-use log::{error, info};
+use log::{error, info, LevelFilter};
+use simplelog::WriteLogger;
+
+fn get_tempfile() -> io::Result<File> {
+  let tmp_dir = std::env::temp_dir();
+  let current_time = chrono::Local::now().format("%Y%m%d-%H:%M:%S");
+  let tmp_file_name = format!("jlu_drcom_rs-{}.log", current_time);
+  let tmp_file_path = tmp_dir.join(tmp_file_name);
+  File::create(tmp_file_path)
+}
 
 #[tokio::main]
 async fn main() -> Result<(), DrcomError> {
@@ -13,8 +24,12 @@ async fn main() -> Result<(), DrcomError> {
 
   // 初始化Logger
   // 如果失败了，只能使用eprintln!输出
-  simple_logger::init().unwrap_or_else(|_| {
-    eprintln!("Logger init failed.");
+  let fd = get_tempfile().unwrap_or_else(|e| {
+    eprintln!("Create log file: {}", e);
+    std::process::exit(1);
+  });
+  WriteLogger::init(LevelFilter::Trace, simplelog::Config::default(), fd).unwrap_or_else(|e| {
+    eprintln!("Logger init: {}", e);
     std::process::exit(1);
   });
   info!("Logger init success.");

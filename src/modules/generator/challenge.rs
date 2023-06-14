@@ -1,10 +1,10 @@
 use crate::utils::{
   config::ConfigStore,
-  error::{DrResult, DrcomError}, sock::DrSocket,
+  error::{DrResult, DrcomError},
+  sock::DrSocket,
 };
 use log::error;
 use rand::random;
-use tokio::net::UdpSocket;
 
 #[derive(Default)]
 pub struct ChallengeGenerator {
@@ -50,17 +50,21 @@ impl ChallengeGenerator {
 
 #[cfg(test)]
 mod tests {
+  use std::time::Duration;
+
+  use simplelog::SimpleLogger;
+
   use super::*;
 
   #[tokio::test]
   async fn test_challenge() {
-    simple_logger::init().unwrap();
+    SimpleLogger::init(log::LevelFilter::Trace, simplelog::Config::default()).unwrap();
     ConfigStore::init().unwrap();
 
     let mut generator = ChallengeGenerator::default();
-    let mut socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await.unwrap();
-    socket.connect("10.100.61.3:61440").await.unwrap();
-    let mut socket = DrSocket::new(socket);
+    let mut socket = DrSocket::create("0.0.0.0:0", Duration::from_secs(5))
+      .await
+      .unwrap();
     let result = generator.challenge(&mut socket).await;
     assert!(result.is_ok());
   }

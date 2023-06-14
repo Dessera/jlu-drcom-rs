@@ -4,7 +4,8 @@ use crate::utils::{
   checksum,
   config::ConfigStore,
   error::{DrResult, DrcomError},
-  ror, sock::DrSocket,
+  ror,
+  sock::DrSocket,
 };
 
 #[derive(Default)]
@@ -231,13 +232,17 @@ impl LoginGenerator {
 
 #[cfg(test)]
 mod tests {
+  use std::time::Duration;
+
+  use simplelog::SimpleLogger;
+
   use super::*;
   use crate::modules::generator::ChallengeGenerator;
 
   #[tokio::test]
   #[ignore = "need a valid config"]
   async fn test_login() {
-    simple_logger::init().unwrap();
+    SimpleLogger::init(log::LevelFilter::Trace, simplelog::Config::default()).unwrap();
     ConfigStore::init().unwrap();
 
     // test settings
@@ -246,9 +251,9 @@ mod tests {
 
     let mut cgen = ChallengeGenerator::default();
     let mut lgen = LoginGenerator::default();
-    let mut socket = tokio::net::UdpSocket::bind("0.0.0.0:0").await.unwrap();
-    socket.connect("10.100.61.3:61440").await.unwrap();
-    let mut socket = DrSocket::new(socket);
+    let mut socket = DrSocket::create("0.0.0.0:0", Duration::from_secs(5))
+      .await
+      .unwrap();
     let clg_res = cgen.challenge(&mut socket).await;
     assert!(clg_res.is_ok());
     let login_res = lgen.login(&mut socket).await;
