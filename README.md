@@ -1,3 +1,6 @@
+[deprecated]
+请转移到：https://github.com/Dessera/jlud-rs
+
 # jlu-drcom-rs
 jlu drcom客户端的rust实现
 # TODO LIST
